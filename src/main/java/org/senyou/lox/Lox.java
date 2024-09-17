@@ -36,6 +36,19 @@ public class Lox {
     }
 
     /**
+     * Report an error at a given token.
+     * @param token
+     * @param message
+     */
+    static void error(Token token, String message) {
+        if (token.type() == TokenType.EOF) {
+            report(token.line(), " at end", message);
+        } else {
+            report(token.line(), " at '" + token.lexeme() + "'", message);
+        }
+    }
+
+    /**
      * Read and execute the source code from the given path.
      * @param path
      * @throws IOException
@@ -71,21 +84,24 @@ public class Lox {
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
 
-        for(Token token : tokens) {
-            System.out.println(token);
-        }
+        // Stop if there was a syntax error.
+        if(hadError) return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if(args.length > 1) {
             System.out.println("Usage: jlox [script]");
             // https://man.freebsd.org/cgi/man.cgi?query=sysexits&apropos=0&sektion=0&manpath=FreeBSD+4.3-RELEASE&format=html#:~:text=EX_USAGE%20(64)%09%20%20%20The%20command%20was%20used%20incorrectly%2C%20e.g.%2C%20with%20the%0A%09%09%09%20%20%20wrong%20number%20of%20arguments%2C%20a%20bad%20flag%2C%20a%20bad%20syntax%0A%09%09%09%20%20%20in%20a%20parameter%2C%20or%20whatever.
             System.exit(64);
         } else if(args.length == 1) {
-            //runFile(args[0]);
+            runFile(args[0]);
         } else {
-            //runPrompt();
+            runPrompt();
         }
     }
 }

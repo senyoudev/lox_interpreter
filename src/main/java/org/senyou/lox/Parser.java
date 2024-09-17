@@ -10,8 +10,23 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
 
+    /** A ParseError class. */
+    private static class ParseError extends RuntimeException {}
+
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
+    }
+
+    /**
+     * Parse the tokens into an expression.
+     * @return the expression.
+     */
+    Expr parse() {
+        try {
+            return expression();
+        } catch (ParseError error) {
+            return null;
+        }
     }
 
     /**
@@ -178,6 +193,45 @@ public class Parser {
      */
     private Token previous() {
         return tokens.get(current - 1);
+    }
+
+    /**
+     * Consume the current token if it is of the given type, otherwise throw an error.
+     * @param type
+     * @param message
+     * @return the current token.
+     */
+    private Token consume(TokenType type, String message) {
+        if (check(type)) return advance();
+        throw error(peek(), message);
+    }
+
+
+    /**
+     * Report an error at the given token.
+     * @param token
+     * @param message
+     * @return a ParseError.
+     */
+    private ParseError error(Token token, String message) {
+        Lox.error(token, message);
+        return new ParseError();
+    }
+
+    /**
+     * Synchronize the parser after an error.
+     */
+    private void synchronize() {
+        advance();
+        while (!isAtEnd()) {
+            if (previous().type() == TokenType.SEMICOLON) return;
+            switch (peek().type()) {
+                case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
+                    return;
+                }
+            }
+            advance();
+        }
     }
 
 
